@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cricket Simulator - Probability Edition</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js">
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #1a1a2e;
+            color: #eee;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            width: 100%;
+            background: #16213e;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+        }
+
+        .top-section {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .left-panel {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 200px;
+            background: #0f3460;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .scoreboard {
+            background: #0f3460;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e94560;
+        }
+
+        .scoreboard-title {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #e94560;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .innings-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .innings-row:last-child {
+            border-bottom: none;
+        }
+
+        .team-name {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .score-detail {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .runs {
+            font-size: 24px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        .wickets {
+            font-size: 18px;
+            color: #aaa;
+        }
+
+        .overs {
+            font-size: 16px;
+            color: #888;
+        }
+
+        .batting-detail {
+            font-size: 14px;
+            color: #aaa;
+            padding: 4px 0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            background: #e94560;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(233, 69, 96, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: #533483;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            box-shadow: 0 4px 16px rgba(83, 52, 131, 0.4);
+        }
+
+        .btn-reset {
+            background: #e94560;
+        }
+
+        .info-box {
+            background: #1a1a2e;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 14px;
+            text-align: center;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #333;
+        }
+
+        .error-message {
+            color: #e94560;
+            font-weight: bold;
+            animation: shake 0.3s ease;
+        }
+
+        @keyframes shake {
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+            25% {
+                transform: translateX(-6px);
+            }
+            75% {
+                transform: translateX(6px);
+            }
+        }
+
+        .match-status {
+            font-size: 14px;
+            color: #4ade80;
+            font-weight: bold;
+        }
+
+        .canvas-wrapper {
+            background: #0a0a1a;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid #333;
+        }
+
+        .legend {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            padding: 8px 0;
+            font-size: 12px;
+            color: #888;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+        }
+
+        .status-bar {
+            background: #0f3460;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="top-section">
+            <!-- Left Panel: Canvas -->
+            <div class="left-panel">
+                <div class="canvas-wrapper" id="p5canvas"></div>
+                <div class="legend">
+                    <span class="legend-item"><span class="legend-color" style="background:#e94560;"></span> Out</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#4ade80;"></span> Dot</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#60a5fa;"></span> 1</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#fbbf24;"></span> 2</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#f472b6;"></span> 3</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#a78bfa;"></span> 4</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#34d399;"></span> 6</span>
+                    <span class="legend-item"><span class="legend-color" style="background:#fb923c;"></span> WD/NB</span>
+                    <span style="margin-left:auto;color:#666;font-size:11px;">Shift+Click to lock bars</span>
+                </div>
+            </div>
+
+            <!-- Right Panel: Scoreboard & Controls -->
+            <div class="right-panel">
+                <div class="scoreboard">
+                    <div class="scoreboard-title">🏏 LIVE SCORE</div>
+                    <div id="scoreDisplay">
+                        <div class="innings-row">
+                            <span class="team-name" id="team1Name">Team A</span>
+                            <div class="score-detail">
+                                <span class="runs" id="team1Runs">0</span>
+                                <span class="wickets">/ <span id="team1Wickets">0</span></span>
+                                <span class="overs">(<span id="team1Overs">0.0</span>)</span>
+                            </div>
+                        </div>
+                        <div class="innings-row" style="border-bottom:2px solid #e94560;padding-bottom:8px;margin-bottom:8px;">
+                            <span class="team-name" id="team2Name">Team B</span>
+                            <div class="score-detail">
+                                <span class="runs" id="team2Runs">0</span>
+                                <span class="wickets">/ <span id="team2Wickets">0</span></span>
+                                <span class="overs">(<span id="team2Overs">0.0</span>)</span>
+                            </div>
+                        </div>
+                        <div class="batting-detail" id="batsmanInfo">Batsman: Player 1 • 0 (0)</div>
+                        <div class="batting-detail" id="bowlerInfo">Bowler: Player 1 • 0-0</div>
+                    </div>
+                </div>
+
+                <div class="controls">
+                    <button class="btn" id="simBallBtn">▶ Next Ball</button>
+                    <button class="btn btn-secondary" id="simOverBtn">⏩ Rest of Over</button>
+                    <button class="btn btn-reset" id="resetBtn" style="background:#533483;">🔄 New Match</button>
+                </div>
+
+                <div class="info-box" id="infoBox">
+                    <span>Adjust probabilities using the bars above</span>
+                </div>
+
+                <div class="status-bar">
+                    <span id="matchStatus">📋 Match: Team A vs Team B</span>
+                    <span id="ballCount">Ball: 0/30</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ======================== CRICKET SIMULATION ENGINE ========================
+
+        const OUTCOMES = ['out', 'dot', '1', '2', '3', '4', '6', 'wd/nb'];
+        const BALLS_PER_OVER = 6;
+        const MAX_OVERS = 5;
+        const TOTAL_BALLS = BALLS_PER_OVER * MAX_OVERS * 2; // 2 innings
+
+        // Team and player data
+        class Player {
+            constructor(name) {
+                this.name = name;
+                this.runs = 0;
+                this.balls = 0;
+                this.fours = 0;
+                this.sixes = 0;
+                this.isOut = false;
+            }
+
+            get strikeRate() {
+                return this.balls > 0 ? (this.runs / this.balls) * 100 : 0;
+            }
+
+            get display() {
+                return `${this.runs} (${this.balls})`;
+            }
+        }
+
+        class Team {
+            constructor(name) {
+                this.name = name;
+                this.players = [];
+                for (let i = 1; i <= 11; i++) {
+                    this.players.push(new Player(`${name} ${i}`));
+                }
+                this.runs = 0;
+                this.wickets = 0;
+                this.ballsBowled = 0;
+                this.totalOvers = 0;
+                this.currentBatsmanIdx = 0;
+                this.currentNonStrikerIdx = 1;
+                this.currentBowlerIdx = 0;
+                this.battingOrder = [0, 1]; // indices into players array
+                this.bowlingOrder = [0, 1, 2, 3, 4]; // first 5 bowlers
+                this.bowlerStats = {};
+                this.isBatting = false;
+                this.inningsComplete = false;
+                this.extras = 0;
+            }
+
+            get currentBatsman() { return this.players[this.battingOrder[0]]; }
+            get currentNonStriker() { return this.players[this.battingOrder[1]]; }
+            get currentBowler() { return this.players[this.bowlingOrder[this.currentBowlerIdx % this.bowlingOrder.length]]; }
+
+            get overs() {
+                return Math.floor(this.ballsBowled / BALLS_PER_OVER) + (this.ballsBowled % BALLS_PER_OVER) / 10;
+            }
+
+            get displayScore() {
+                return `${this.runs}/${this.wickets}`;
+            }
+
+            get fullDisplay() {
+                return `${this.runs}/${this.wickets} (${this.overs.toFixed(1)} overs)`;
+            }
+
+            reset() {
+                this.runs = 0;
+                this.wickets = 0;
+                this.ballsBowled = 0;
+                this.extras = 0;
+                this.inningsComplete = false;
+                this.battingOrder = [0, 1];
+                this.currentBatsmanIdx = 0;
+                this.currentNonStrikerIdx = 1;
+                this.currentBowlerIdx = 0;
+                this.players.forEach(p => { p.runs = 0;
+                    p.balls = 0;
+                    p.fours = 0;
+                    p.sixes = 0;
+                    p.isOut = false; });
+                this.bowlerStats = {};
+            }
+
+            // Strike rotation
+            rotateStrike() {
+                [this.battingOrder[0], this.battingOrder[1]] = [this.battingOrder[1], this.battingOrder[0]];
+            }
+
+            // Handle a new batsman coming in
+            fallOfWicket() {
+                this.wickets++;
+                if (this.wickets >= 10) {
+                    this.inningsComplete = true;
+                    return;
+                }
+                // Next player in batting order (index 2 + wickets - 1)
+                const newBatsmanIdx = this.wickets + 1;
+                if (newBatsmanIdx < this.players.length) {
+                    this.battingOrder[0] = newBatsmanIdx; // replace the out batsman
+                } else {
+                    this.inningsComplete = true;
+                }
+            }
+
+            // Record a ball outcome
+            recordBall(outcome, runs) {
+                this.ballsBowled++;
+                this.totalOvers = Math.floor(this.ballsBowled / BALLS_PER_OVER) + (this.ballsBowled % BALLS_PER_OVER) / 10;
+
+                const bowler = this.currentBowler;
+                if (!this.bowlerStats[bowler.name]) {
+                    this.bowlerStats[bowler.name] = { overs: 0, runs: 0, wickets: 0, balls: 0 };
+                }
+
+                if (outcome === 'out') {
+                    this.currentBatsman.isOut = true;
+                    this.bowlerStats[bowler.name].wickets++;
+                    this.fallOfWicket();
+                    // New batsman comes in at non-striker? Actually striker is out, new batsman takes striker
+                    // We already replaced in fallOfWicket
+                } else if (outcome === 'wd/nb') {
+                    this.runs += 1; // extra
+                    this.extras += 1;
+                    this.bowlerStats[bowler.name].runs += 1;
+                    // Legal delivery? No, so don't count as ball for batsman
+                } else {
+                    const runVal = parseInt(outcome);
+                    this.runs += runVal;
+                    this.currentBatsman.runs += runVal;
+                    this.currentBatsman.balls++;
+                    this.bowlerStats[bowler.name].runs += runVal;
+                    this.bowlerStats[bowler.name].balls++;
+
+                    if (runVal === 4) this.currentBatsman.fours++;
+                    if (runVal === 6) this.currentBatsman.sixes++;
+
+                    // Strike rotation on odd runs
+                    if (runVal % 2 === 1) {
+                        this.rotateStrike();
+                    }
+                }
+
+                // Count balls for bowler (excluding wides/no-balls)
+                if (outcome !== 'wd/nb') {
+                    this.bowlerStats[bowler.name].balls++;
+                }
+
+                // Rotate bowler every over
+                if (this.ballsBowled % BALLS_PER_OVER === 0 && this.ballsBowled > 0) {
+                    this.currentBowlerIdx++;
+                    // Strike rotates at end of over
+                    this.rotateStrike();
+                }
+
+                // Check if innings over (overs or all out)
+                if (this.ballsBowled >= BALLS_PER_OVER * MAX_OVERS || this.wickets >= 10) {
+                    this.inningsComplete = true;
+                }
+            }
+        }
+
+        // ======================== GAME STATE ========================
+
+        class Game {
+            constructor() {
+                this.team1 = new Team('Team A');
+                this.team2 = new Team('Team B');
+                this.currentInnings = 1; // 1 or 2
+                this.battingTeam = this.team1;
+                this.bowlingTeam = this.team2;
+                this.totalBalls = 0;
+                this.matchComplete = false;
+                this.ballHistory = [];
+                this.currentOver = 1;
+                this.ballsInOver = 0;
+                this.probabilities = new Array(OUTCOMES.length).fill(1 / OUTCOMES.length);
+                this.selectedBars = new Set();
+                this.lastOutcome = null;
+                this.message = '';
+                this.isError = false;
+
+                // Set initial batting order
+                this.team1.isBatting = true;
+                this.team2.isBatting = false;
+                this.team1.battingOrder = [0, 1];
+                this.team2.battingOrder = [0, 1];
+            }
+
+            get currentBatsman() { return this.battingTeam.currentBatsman; }
+            get currentBowler() { return this.bowlingTeam.currentBowler; }
+
+            get ballCount() {
+                let count = this.team1.ballsBowled + this.team2.ballsBowled;
+                return count;
+            }
+
+            get totalOvers() {
+                return (this.team1.ballsBowled + this.team2.ballsBowled) / BALLS_PER_OVER;
+            }
+
+            // Simulate a single ball
+            simulateBall() {
+                if (this.matchComplete) {
+                    this.message = 'Match is already complete! Click New Match to restart.';
+                    this.isError = true;
+                    return null;
+                }
+
+                if (this.battingTeam.inningsComplete) {
+                    this.message = 'Innings complete! Switching sides...';
+                    this.isError = false;
+                    this.switchInnings();
+                    if (this.matchComplete) return null;
+                }
+
+                // Draw outcome from probability distribution
+                const outcome = this.drawOutcome();
+                this.lastOutcome = outcome;
+
+                // Record the ball
+                let runs = 0;
+                if (outcome === 'wd/nb') {
+                    runs = 1;
+                    this.battingTeam.recordBall('wd/nb', 1);
+                } else if (outcome === 'out') {
+                    this.battingTeam.recordBall('out', 0);
+                } else {
+                    runs = parseInt(outcome);
+                    this.battingTeam.recordBall(outcome, runs);
+                }
+
+                this.ballHistory.push({ outcome, runs, team: this.battingTeam.name });
+
+                // Update display info
+                const batsman = this.battingTeam.currentBatsman;
+                const nonStriker = this.battingTeam.currentNonStriker;
+                const bowler = this.bowlingTeam.currentBowler;
+
+                this.message = `🎯 ${outcome}${outcome !== 'out' && outcome !== 'wd/nb' ? ' runs' : ''}`;
+                this.isError = false;
+
+                // Check if innings is complete
+                if (this.battingTeam.inningsComplete) {
+                    this.message += ' - Innings Over!';
+                    if (this.currentInnings === 1) {
+                        this.switchInnings();
+                    } else {
+                        this.matchComplete = true;
+                        this.determineWinner();
+                    }
+                }
+
+                // Update batsman info for display
+                this.updateDisplayInfo();
+
+                return { outcome, runs };
+            }
+
+            drawOutcome() {
+                const rand = Math.random();
+                let cumSum = 0;
+                for (let i = 0; i < this.probabilities.length; i++) {
+                    cumSum += this.probabilities[i];
+                    if (rand < cumSum) {
+                        return OUTCOMES[i];
+                    }
+                }
+                return OUTCOMES[OUTCOMES.length - 1];
+            }
+
+            switchInnings() {
+                if (this.currentInnings === 1) {
+                    this.currentInnings = 2;
+                    this.battingTeam = this.team2;
+                    this.bowlingTeam = this.team1;
+                    this.team2.isBatting = true;
+                    this.team1.isBatting = false;
+                    this.team2.battingOrder = [0, 1];
+                    this.message = '🔄 Second Innings! Team B batting.';
+                    this.isError = false;
+                } else {
+                    this.matchComplete = true;
+                    this.determineWinner();
+                    this.message = '🏆 Match Complete!';
+                }
+            }
+
+            determineWinner() {
+                const t1Score = this.team1.runs;
+                const t2Score = this.team2.runs;
+                const t1Wkts = this.team1.wickets;
+                const t2Wkts = this.team2.wickets;
+
+                if (t1Score > t2Score) {
+                    this.message = `🏆 Team A wins by ${t1Score - t2Score} runs!`;
+                } else if (t2Score > t1Score) {
+                    this.message = `🏆 Team B wins by ${t2Score - t1Score} runs!`;
+                } else {
+                    this.message = `🤝 Match tied! Both teams scored ${t1Score}!`;
+                }
+                this.isError = false;
+            }
+
+            updateDisplayInfo() {
+                // Will be called to update UI
+            }
+
+            reset() {
+                this.team1.reset();
+                this.team2.reset();
+                this.currentInnings = 1;
+                this.battingTeam = this.team1;
+                this.bowlingTeam = this.team2;
+                this.team1.isBatting = true;
+                this.team2.isBatting = false;
+                this.matchComplete = false;
+                this.ballHistory = [];
+                this.probabilities = new Array(OUTCOMES.length).fill(1 / OUTCOMES.length);
+                this.selectedBars = new Set();
+                this.lastOutcome = null;
+                this.message = '🔄 New match started!';
+                this.isError = false;
+
+                // Ensure team1 batting order is correct
+                this.team1.battingOrder = [0, 1];
+                this.team2.battingOrder = [0, 1];
+                this.team1.currentBatsmanIdx = 0;
+                this.team1.currentNonStrikerIdx = 1;
+                this.team2.currentBatsmanIdx = 0;
+                this.team2.currentNonStrikerIdx = 1;
+                this.updateDisplayInfo();
+            }
+
+            simulateOver() {
+                const results = [];
+                const ballsInOver = BALLS_PER_OVER - (this.battingTeam.ballsBowled % BALLS_PER_OVER);
+                const ballsToSim = Math.min(ballsInOver, BALLS_PER_OVER);
+
+                for (let i = 0; i < ballsToSim; i++) {
+                    if (this.matchComplete || this.battingTeam.inningsComplete) break;
+                    const result = this.simulateBall();
+                    if (result) results.push(result);
+                }
+                return results;
+            }
+        }
+
+        // ======================== P5.JS CANVAS & UI ========================
+
+        let game;
+        let barWidth;
+        let margin = { top: 40, bottom: 50, left: 50, right: 30 };
+        let canvasWidth, canvasHeight;
+        let dragIndex = -1;
+        let dragStartY = 0;
+        let dragStartProb = 0;
+
+        function setup() {
+            const canvasContainer = document.getElementById('p5canvas');
+            const containerWidth = canvasContainer.clientWidth || 600;
+            const containerHeight = Math.min(containerWidth * 0.6, 400);
+
+            canvasWidth = containerWidth;
+            canvasHeight = containerHeight;
+
+            const canvas = createCanvas(canvasWidth, canvasHeight);
+            canvas.parent('p5canvas');
+
+            game = new Game();
+            updateUI();
+
+            // Set up event listeners
+            document.getElementById('simBallBtn').addEventListener('click', () => {
+                if (!game.matchComplete) {
+                    game.simulateBall();
+                    updateUI();
+                    redrawBars();
+                } else {
+                    document.getElementById('infoBox').innerHTML = '<span class="error-message">Match is over! Click New Match.</span>';
+                }
+            });
+
+            document.getElementById('simOverBtn').addEventListener('click', () => {
+                if (!game.matchComplete) {
+                    game.simulateOver();
+                    updateUI();
+                    redrawBars();
+                } else {
+                    document.getElementById('infoBox').innerHTML = '<span class="error-message">Match is over! Click New Match.</span>';
+                }
+            });
+
+            document.getElementById('resetBtn').addEventListener('click', () => {
+                game.reset();
+                updateUI();
+                redrawBars();
+                document.getElementById('infoBox').innerHTML = '<span>🔄 Match reset. Adjust probabilities and play!</span>';
+            });
+
+            redrawBars();
+        }
+
+        function draw() {
+            background('#0a0a1a');
+            drawBars();
+            drawAxes();
+            drawLabels();
+        }
+
+        function drawBars() {
+            const numBars = OUTCOMES.length;
+            const chartWidth = canvasWidth - margin.left - margin.right;
+            const chartHeight = canvasHeight - margin.top - margin.bottom;
+            barWidth = chartWidth / numBars;
+
+            const maxProb = 1.0;
+
+            for (let i = 0; i < numBars; i++) {
+                const x = margin.left + i * barWidth;
+                const barHeight = (game.probabilities[i] / maxProb) * chartHeight;
+                const y = margin.top + chartHeight - barHeight;
+
+                // Color based on selection state
+                let col;
+                if (game.selectedBars.has(i)) {
+                    col = color(255, 215, 0, 200); // Gold for selected
+                } else if (dragIndex === i) {
+                    col = color(255, 255, 255, 220);
+                } else {
+                    const colors = [
+                        '#e94560', '#4ade80', '#60a5fa', '#fbbf24',
+                        '#f472b6', '#a78bfa', '#34d399', '#fb923c'
+                    ];
+                    col = color(colors[i % colors.length]);
+                }
+
+                // Draw bar
+                fill(col);
+                noStroke();
+                rect(x + 2, y, barWidth - 4, barHeight);
+
+                // Draw value on top
+                fill(200);
+                textAlign(CENTER, BOTTOM);
+                textSize(12);
+                const probVal = game.probabilities[i];
+                text(probVal.toFixed(3), x + barWidth / 2, y - 4);
+
+                // Draw outcome label
+                fill(180);
+                textSize(11);
+                textAlign(CENTER, TOP);
+                const label = OUTCOMES[i];
+                text(label, x + barWidth / 2, margin.top + chartHeight + 4);
+
+                // Highlight selected indicator
+                if (game.selectedBars.has(i)) {
+                    stroke(255, 215, 0);
+                    strokeWeight(2);
+                    noFill();
+                    rect(x + 2, y, barWidth - 4, barHeight);
+                    noStroke();
+                }
+            }
+        }
+
+        function drawAxes() {
+            stroke(100);
+            strokeWeight(1);
+            const chartHeight = canvasHeight - margin.top - margin.bottom;
+            const yBase = margin.top + chartHeight;
+
+            // Y-axis
+            line(margin.left, margin.top, margin.left, yBase);
+            line(margin.left, yBase, canvasWidth - margin.right, yBase);
+
+            // Y-axis labels
+            fill(150);
+            textSize(10);
+            textAlign(RIGHT, CENTER);
+            for (let i = 0; i <= 4; i++) {
+                const val = i / 4;
+                const y = yBase - val * chartHeight;
+                text(val.toFixed(1), margin.left - 8, y);
+                stroke(50);
+                line(margin.left - 4, y, margin.left, y);
+            }
+            textAlign(CENTER, TOP);
+            text('Probability', margin.left, margin.top - 20);
+        }
+
+        function drawLabels() {
+            fill(100);
+            textSize(11);
+            textAlign(LEFT, TOP);
+
+            // Selection info
+            if (game.selectedBars.size > 0) {
+                fill(255, 215, 0);
+                const selectedList = Array.from(game.selectedBars).map(i => OUTCOMES[i]).join(', ');
+                text(`🔒 Locked: ${selectedList}`, margin.left + 10, canvasHeight - 30);
+            }
+
+            // Error message if any
+            if (game.isError) {
+                fill('#e94560');
+                textAlign(CENTER, TOP);
+                textSize(14);
+                text('⚠️ ' + game.message, canvasWidth / 2, 4);
+            }
+        }
+
+        function redrawBars() {
+            // Just redraw - called from UI updates
+            // We'll trigger a redraw via the draw loop
+        }
+
+        // ======================== MOUSE INTERACTION ========================
+
+        function mousePressed() {
+            if (mouseX < margin.left || mouseX > canvasWidth - margin.right ||
+                mouseY < margin.top || mouseY > canvasHeight - margin.bottom) {
+                return;
+            }
+
+            const numBars = OUTCOMES.length;
+            const chartWidth = canvasWidth - margin.left - margin.right;
+            const barWidth = chartWidth / numBars;
+
+            const barIndex = Math.floor((mouseX - margin.left) / barWidth);
+            if (barIndex < 0 || barIndex >= numBars) return;
+
+            // Check for shift click to toggle selection
+            if (keyIsDown(SHIFT)) {
+                if (game.selectedBars.has(barIndex)) {
+                    game.selectedBars.delete(barIndex);
+                } else {
+                    game.selectedBars.add(barIndex);
+                }
+                // Validate the distribution
+                validateDistribution();
+                updateUI();
+                return;
+            }
+
+            // Check if bar is selected (locked)
+            if (game.selectedBars.has(barIndex)) {
+                return; // Cannot drag locked bars
+            }
+
+            // Start drag
+            dragIndex = barIndex;
+            dragStartY = mouseY;
+            dragStartProb = game.probabilities[barIndex];
+
+            // Ensure no error display
+            game.isError = false;
+            document.getElementById('infoBox').innerHTML = '<span>Adjusting probability...</span>';
+        }
+
+        function mouseDragged() {
+            if (dragIndex === -1) return;
+
+            const deltaY = (dragStartY - mouseY) / (canvasHeight - margin.top - margin.bottom);
+            let newProb = Math.max(0, Math.min(1, dragStartProb + deltaY));
+
+            // Snap to 0 or 1 if close
+            if (newProb < 0.001) newProb = 0;
+            if (newProb > 0.999) newProb = 1;
+
+            // Store old prob for adjusting others
+            const oldProb = game.probabilities[dragIndex];
+
+            // If newProb is the same, skip
+            if (Math.abs(newProb - oldProb) < 0.0001) return;
+
+            // Set the new probability
+            game.probabilities[dragIndex] = newProb;
+
+            // Redistribute the difference among other bars
+            const diff = oldProb - newProb; // positive if we decreased, negative if increased
+
+            // Determine which bars to adjust
+            let barsToAdjust = [];
+            for (let i = 0; i < game.probabilities.length; i++) {
+                if (i !== dragIndex && !game.selectedBars.has(i)) {
+                    barsToAdjust.push(i);
+                }
+            }
+
+            if (barsToAdjust.length === 0) {
+                // No adjustable bars - revert
+                game.probabilities[dragIndex] = oldProb;
+                return;
+            }
+
+            // Distribute diff equally among adjustable bars
+            const adjustAmount = diff / barsToAdjust.length;
+
+            let valid = true;
+            for (const idx of barsToAdjust) {
+                const newVal = game.probabilities[idx] + adjustAmount;
+                if (newVal < 0 || newVal > 1) {
+                    valid = false;
+                    break;
+                }
+                game.probabilities[idx] = newVal;
+            }
+
+            // Check if any adjusted bar went out of bounds
+            if (!valid) {
+                // Revert
+                game.probabilities[dragIndex] = oldProb;
+                for (const idx of barsToAdjust) {
+                    game.probabilities[idx] = game.probabilities[idx] - adjustAmount;
+                }
+                return;
+            }
+
+            // Validate the distribution
+            validateDistribution();
+            updateUI();
+            redrawBars();
+        }
+
+        function mouseReleased() {
+            if (dragIndex !== -1) {
+                dragIndex = -1;
+                validateDistribution();
+                updateUI();
+                redrawBars();
+            }
+        }
+
+        // ======================== VALIDATION ========================
+
+        function validateDistribution() {
+            const sum = game.probabilities.reduce((a, b) => a + b, 0);
+            const tolerance = 0.001;
+
+            if (Math.abs(sum - 1) > tolerance) {
+                game.isError = true;
+                game.message = `❌ Probability sum is ${sum.toFixed(4)}, must equal 1.0`;
+                document.getElementById('infoBox').innerHTML = `<span class="error-message">${game.message}</span>`;
+                return false;
+            }
+
+            // Check each probability is between 0 and 1
+            for (let i = 0; i < game.probabilities.length; i++) {
+                if (game.probabilities[i] < 0 || game.probabilities[i] > 1) {
+                    game.isError = true;
+                    game.message = `❌ Probability for ${OUTCOMES[i]} is ${game.probabilities[i].toFixed(4)}, must be between 0 and 1`;
+                    document.getElementById('infoBox').innerHTML = `<span class="error-message">${game.message}</span>`;
+                    return false;
+                }
+            }
+
+            game.isError = false;
+            game.message = '✅ Distribution is valid';
+            document.getElementById('infoBox').innerHTML = `<span>${game.message}</span>`;
+            return true;
+        }
+
+        // ======================== UI UPDATE ========================
+
+        function updateUI() {
+            // Update scoreboard
+            document.getElementById('team1Name').textContent = game.team1.name;
+            document.getElementById('team1Runs').textContent = game.team1.runs;
+            document.getElementById('team1Wickets').textContent = game.team1.wickets;
+            document.getElementById('team1Overs').textContent = game.team1.overs.toFixed(1);
+
+            document.getElementById('team2Name').textContent = game.team2.name;
+            document.getElementById('team2Runs').textContent = game.team2.runs;
+            document.getElementById('team2Wickets').textContent = game.team2.wickets;
+            document.getElementById('team2Overs').textContent = game.team2.overs.toFixed(1);
+
+            // Batsman info
+            if (game.battingTeam && game.battingTeam.players.length > 0) {
+                const batsman = game.battingTeam.currentBatsman;
+                const nonStriker = game.battingTeam.currentNonStriker;
+                if (batsman && nonStriker) {
+                    document.getElementById('batsmanInfo').textContent =
+                        `Batsman: ${batsman.name} • ${batsman.display} | Non-Striker: ${nonStriker.name} • ${nonStriker.display}`;
+                }
+            }
+
+            // Bowler info
+            if (game.bowlingTeam && game.bowlingTeam.currentBowler) {
+                const bowler = game.bowlingTeam.currentBowler;
+                const stats = game.bowlingTeam.bowlerStats[bowler.name] || { overs: 0, runs: 0, wickets: 0, balls: 0 };
+                const oversBowled = Math.floor(stats.balls / BALLS_PER_OVER) + (stats.balls % BALLS_PER_OVER) / 10;
+                document.getElementById('bowlerInfo').textContent =
+                    `Bowler: ${bowler.name} • ${stats.runs}/${stats.wickets} (${oversBowled.toFixed(1)} overs)`;
+            }
+
+            // Match status
+            const status = game.matchComplete ? '🏁 Match Complete' :
+                game.currentInnings === 1 ? '🏏 Innings 1: Team A batting' :
+                '🏏 Innings 2: Team B batting';
+            document.getElementById('matchStatus').textContent = status;
+
+            // Ball count
+            const totalBalls = game.team1.ballsBowled + game.team2.ballsBowled;
+            document.getElementById('ballCount').textContent = `Ball: ${totalBalls}/${TOTAL_BALLS}`;
+
+            // If match is complete, show result in info box
+            if (game.matchComplete) {
+                document.getElementById('infoBox').innerHTML = `<span style="color:#4ade80;font-weight:bold;">🏆 ${game.message}</span>`;
+            }
+
+            validateDistribution();
+        }
+
+        // ======================== RESPONSIVE ========================
+
+        function windowResized() {
+            const canvasContainer = document.getElementById('p5canvas');
+            const containerWidth = canvasContainer.clientWidth || 600;
+            const containerHeight = Math.min(containerWidth * 0.6, 400);
+
+            canvasWidth = containerWidth;
+            canvasHeight = containerHeight;
+
+            resizeCanvas(canvasWidth, canvasHeight);
+            redrawBars();
+        }
+
+        // ======================== KEYBOARD SHORTCUTS ========================
+
+        function keyPressed() {
+            if (key === ' ' || key === 'ENTER') {
+                // Space or Enter to simulate ball
+                if (!game.matchComplete) {
+                    game.simulateBall();
+                    updateUI();
+                    redrawBars();
+                }
+                return false;
+            }
+            if (key === 'o' || key === 'O') {
+                // 'O' to simulate over
+                if (!game.matchComplete) {
+                    game.simulateOver();
+                    updateUI();
+                    redrawBars();
+                }
+                return false;
+            }
+            if (key === 'r' || key === 'R') {
+                // 'R' to reset
+                game.reset();
+                updateUI();
+                redrawBars();
+                document.getElementById('infoBox').innerHTML = '<span>🔄 Match reset. Adjust probabilities and play!</span>';
+                return false;
+            }
+        }
+
+        // ======================== START ========================
+
+        console.log('🏏 Cricket Simulator loaded!');
+        console.log('Controls:');
+        console.log('  - Click and drag bars to adjust probabilities');
+        console.log('  - Shift+Click to lock/unlock bars');
+        console.log('  - Space/Enter: Simulate next ball');
+        console.log('  - O: Simulate rest of over');
+        console.log('  - R: Reset match');
+    </script>
+
+</body>
+</html>
